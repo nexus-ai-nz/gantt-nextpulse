@@ -8,3 +8,8 @@ Copy of the Nexus Gantt chart, without subtasks, set up for the Nextpulse ERP `t
 - Dragging a bar's progress saves to the Supabase `tasks` table automatically (toggle in settings).
 
 Version: see `package.json` (1.0.0).
+
+## Editing dates (1.1.0)
+Drag a bar to move it, or drag its left/right edge to change the start / end date. Saved to `tasks` through WeWeb's Supabase connection (`Field: start date` default `start_date`, `Field: end date` default `due_date`). Toggle with `Allow dragging bars to change start / end dates`.
+Events: `task-dates-change` (while saving), `dates-saved`.
+Needs a `start_date` column on `tasks`; until then the start shown falls back to `created_at`.

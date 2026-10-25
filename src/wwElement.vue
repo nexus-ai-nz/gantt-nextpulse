@@ -86,9 +86,12 @@
                 :title="r.tooltip"
                 :class="{ 'gx-editable': r.canEdit, 'gx-dragging': drag && drag.key === r.key }"
                 @click="onBarClick(r)"
+                @pointerdown="r.canEditDates && startDateDrag($event, r, 'move')"
               >
                 <div class="gx-fill" :style="{ width: r.progress + '%', background: r.color }" />
                 <span v-if="showProgressLabel && !r.isSub && r.bar.width > 44" class="gx-pct">{{ r.progress }}%</span>
+                <div v-if="r.canEditDates" class="gx-rz gx-rz-l" @pointerdown.stop.prevent="startDateDrag($event, r, 'left')" @click.stop />
+                <div v-if="r.canEditDates" class="gx-rz gx-rz-r" @pointerdown.stop.prevent="startDateDrag($event, r, 'right')" @click.stop />
                 <div
                   v-if="r.canEdit"
                   class="gx-handle"
@@ -101,7 +104,7 @@
                 v-if="drag && drag.key === r.key"
                 class="gx-tip"
                 :style="{ left: r.bar.left + (r.bar.width * r.progress) / 100 + 'px' }"
-              >{{ r.progress }}%</div>
+              >{{ drag.dates ? fmt(r.start) + ' → ' + fmt(r.end) : r.progress + '%' }}</div>
             </div>
           </div>
         </div>
@@ -165,10 +168,11 @@ export default {
     } catch (e) { /* preview outside WeWeb */ }
 
     const overrides = ref({});
+    const dateOv = ref({});
     const drag = ref(null);
     watch(
       [() => props.content && props.content.tasks, () => props.content && props.content.subtasks],
-      () => { overrides.value = {}; },
+      () => { overrides.value = {}; dateOv.value = {}; },
     );
     const pOf = (it, pre) => {
       const v = overrides.value[pre + it.id];
@@ -393,7 +397,9 @@ export default {
 
     function decorate(it0, extra) {
       const ov = overrides.value[(it0.isSub ? 's' : 't') + it0.id];
-      const it = ov === undefined ? it0 : { ...it0, progress: ov };
+      const dv = dateOv.value[(it0.isSub ? 's' : 't') + it0.id];
+      let it = ov === undefined ? it0 : { ...it0, progress: ov };
+      if (dv) it = { ...it, start: dv.start, end: dv.end };
       const kind = kindOf(it);
       const color = colorMap.value[kind];
       let bar = null;
@@ -408,6 +414,7 @@ export default {
         ...extra,
         key: (it.isSub ? 's' : 't') + it.id,
         canEdit: !!c('allowProgressEdit', true) && !extra.noEdit && !!bar,
+        canEditDates: !!c('allowDateEdit', true) && !extra.isClient && !!bar,
         color,
         prioColor: prioColors.value[Math.min(3, Math.max(1, Math.round(it.priority)))] || prioColors.value[3],
         bar,
@@ -570,7 +577,75 @@ export default {
       window.addEventListener('pointercancel', up);
     };
 
+    const ymd = d => new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12)).toISOString();
+    const saveDates = async (r, start, end) => {
+      const fail = msg => {
+        const o = { ...dateOv.value };
+        delete o[r.key];
+        dateOv.value = o;
+        showError('Dates not saved: ' + msg);
+        emit('trigger-event', { name: 'progress-save-error', event: { value: { id: r.id, isSubtask: !!r.isSub, message: msg } } });
+      };
+      if (!c('saveToSupabase', true)) return;
+      const client = getSupabase();
+      if (!client) return fail('Supabase connection not found');
+      try {
+        const patch = { [c('startField', 'start_date')]: ymd(start), [c('endField', 'due_date')]: ymd(end) };
+        const upd = c('updatedTimeColumn', 'updated_time');
+        if (upd) patch[upd] = new Date().toISOString();
+        const table = r.isSub ? c('subtasksTable', 'subtasks') : c('tasksTable', 'tasks');
+        const res = await client.from(table).update(patch).eq(c('idField', 'id'), r.id).select();
+        if (res.error) return fail(res.error.message || 'update failed');
+        if (!res.data || !res.data.length) return fail('no row updated (check the table name or the RLS update policy)');
+        emit('trigger-event', { name: 'dates-saved', event: { value: { id: r.id, start: patch[c('startField', 'start_date')], end: patch[c('endField', 'due_date')] } } });
+      } catch (e) {
+        fail((e && e.message) || 'update failed');
+      }
+    };
+
+    const startDateDrag = (e, r, mode) => {
+      if (!r.canEditDates || e.button > 0) return;
+      const x0 = e.clientX;
+      const s0 = r.start;
+      const e0 = r.end;
+      let ds = 0;
+      let de = 0;
+      let moved = false;
+      const apply = () => {
+        let s = new Date(s0.getFullYear(), s0.getMonth(), s0.getDate() + ds);
+        let en = new Date(e0.getFullYear(), e0.getMonth(), e0.getDate() + de);
+        if (en < s) { if (mode === 'left') s = en; else en = s; }
+        dateOv.value = { ...dateOv.value, [r.key]: { start: s, end: en } };
+        return { s, en };
+      };
+      const move = ev => {
+        const d = Math.round((ev.clientX - x0) / pxPerDay.value);
+        if (!moved && Math.abs(ev.clientX - x0) < 4) return;
+        if (!moved) { moved = true; drag.value = { key: r.key, dates: true }; }
+        if (mode === 'move') { ds = d; de = d; } else if (mode === 'left') { ds = d; de = 0; } else { ds = 0; de = d; }
+        apply();
+      };
+      const up = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        window.removeEventListener('pointercancel', up);
+        drag.value = null;
+        if (!moved) return;
+        suppressClick = true;
+        setTimeout(() => { suppressClick = false; }, 0);
+        if (!ds && !de) { const o = { ...dateOv.value }; delete o[r.key]; dateOv.value = o; return; }
+        const { s, en } = apply();
+        saveDates(r, s, en);
+        emit('trigger-event', { name: 'task-dates-change', event: { value: { id: r.id, start: s, end: en, previousStart: s0, previousEnd: e0, row: r.raw } } });
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+      window.addEventListener('pointercancel', up);
+    };
+
+    let suppressClick = false;
     const onBarClick = r => {
+      if (suppressClick) return;
       if (r.isClient) return;
       setSelected(r.raw);
       emit('trigger-event', {
@@ -603,7 +678,7 @@ export default {
 
     return {
       errMsg, rows, ticks, months, selectedClient, clientOptions, onClientChange, externalFilter, weekends, todayLeft, totalPx, pxPerDay, leftW, rowH, rootStyle,
-      toggle, onBarClick, barStyle, startDrag, drag, saveError,
+      toggle, onBarClick, barStyle, startDrag, startDateDrag, drag, saveError,
       showToday: computed(() => !!c('showToday', true)),
       showPriority: computed(() => !!c('showPriority', true)),
       showProgressLabel: computed(() => !!c('showProgressLabel', true)),
@@ -634,6 +709,10 @@ export default {
 .gx-layer { position: absolute; top: 0; bottom: 0; z-index: 0; pointer-events: none; }
 .gx-weekend { position: absolute; top: 0; bottom: 0; background: var(--gx-weekend); }
 .gx-vline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--gx-grid); }
+.gx-rz { position: absolute; top: 0; bottom: 0; width: 7px; cursor: ew-resize; z-index: 3; }
+.gx-rz-l { left: -2px; }
+.gx-rz-r { right: -2px; }
+.gx-bar.gx-editable { cursor: grab; }
 .gx-today { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--gx-today); z-index: 2; }
 .gx-row { position: relative; z-index: 1; display: flex; border-bottom: 1px solid var(--gx-grid); }
 .gx-row:last-child { border-bottom: none; }
