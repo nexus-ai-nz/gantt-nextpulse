@@ -1,12 +1,13 @@
 {
-  "name": "gantt-nextpulse",
+  "name": "ww-gantt-nextpulse",
   "version": "1.0.0",
-  "description": "Gantt chart element for WeWeb, built for Nextpulse tasks",
   "private": true,
+  "description": "Gantt chart WeWeb component for Nextpulse tasks (no subtasks)",
   "scripts": {
     "serve": "weweb serve --port=8080",
-    "build": "weweb build --name=gantt-nextpulse --type=element"
+    "build": "weweb build"
   },
+  "dependencies": {},
   "devDependencies": {
     "@weweb/cli": "latest"
   }

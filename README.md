@@ -1,11 +1,10 @@
-# Gantt Nextpulse
+# Gantt Nextpulse – WeWeb component
 
-WeWeb custom element: Gantt chart of tasks (no subtasks).
+Copy of the Nexus Gantt chart, without subtasks, set up for the Nextpulse ERP `tasks` table.
 
-## Use in WeWeb
-Import this repo as a custom element (version tags: `v1.0.0`). Bind **Tasks** to your Supabase `tasks` collection, then map the field names if yours differ (defaults: `name`, `created_at`, `due_date`, `progress`, `status`, `assignee`). Tasks with no due date are hatched and span 14 days (configurable). Clicking a bar fires the `task-click` event.
+- `Tasks`: bind your Supabase `tasks` collection. Bars run from `created_at` (or `start_date` if you add one) to `due_date`.
+- Field names, colours, zoom and sizes are editable properties.
+- Events: `task-click`, `task-progress-change`, `progress-saved`, `progress-save-error`.
+- Dragging a bar's progress saves to the Supabase `tasks` table automatically (toggle in settings).
 
-## Layout
-- `ww-config.js` – element config/properties
-- `src/wwElement.vue` – the component
-- `demo/` – standalone HTML preview with a snapshot of the Nextpulse tasks
+Version: see `package.json` (1.0.0).
