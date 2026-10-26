@@ -88,6 +88,7 @@ export default {
     filterClientId: text('Filter by client id (bind to your own dropdown, optional)', ''),
     allClientsLabel: text('Filter: "all clients" label', 'All clients'),
     noClientLabel: text('Label for tasks without a client', 'No client'),
+    scrollToToday: toggle('Scroll to today when the chart opens', true),
     includeToday: toggle('Always include today in range', true),
     defaultExpanded: toggle('Expand tasks by default', true),
     saveToSupabase: toggle('Save progress to Supabase automatically (no workflow needed)', true),

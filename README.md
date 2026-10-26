@@ -16,3 +16,6 @@ Start date uses the `created_at` column, so moving a bar overwrites it.
 
 ## Click
 Click a bar or a task name: sets the component variable `selectedTaskId` (the task id) and `selectedItem` (the row), and fires `task-click` (value = the row). Add a workflow on that event to open your popup.
+
+## Opens on today
+The chart scrolls so today is in view when it opens and when you change the zoom (setting `Scroll to today when the chart opens`).

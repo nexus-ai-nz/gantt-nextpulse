@@ -3,7 +3,7 @@
     <div v-if="saveError" class="gx-toast">{{ saveError }}</div>
     <div v-if="errMsg" class="gx-empty gx-error">Gantt error — {{ errMsg }}</div>
     <div v-else-if="!rows.length" class="gx-empty">{{ emptyText }}</div>
-    <div v-else class="gx-scroll" :style="{ maxHeight: maxHeight || 'none' }">
+    <div v-else ref="scrollEl" class="gx-scroll" :style="{ maxHeight: maxHeight || 'none' }">
       <div class="gx-inner" :style="{ width: leftW + totalPx + 'px' }">
         <div class="gx-head">
           <div class="gx-left gx-hleft">
@@ -114,7 +114,7 @@
 </template>
 
 <script>
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 
 const DAY = 86400000;
 const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -652,6 +652,17 @@ export default {
     };
 
     let suppressClick = false;
+    const scrollEl = ref(null);
+    const scrollToToday = () => {
+      const el = scrollEl.value;
+      if (!el || todayLeft.value === null || !c('scrollToToday', true)) return;
+      const visible = Math.max(0, el.clientWidth - leftW.value);
+      el.scrollLeft = Math.max(0, todayLeft.value - visible / 3);
+    };
+    // jump to today when the chart first appears and when the zoom changes (not on every data refresh)
+    watch(scrollEl, el => { if (el) nextTick(scrollToToday); });
+    watch(() => c('viewMode', 'day'), () => nextTick(scrollToToday));
+
     const onBarClick = r => {
       if (suppressClick) return;
       if (r.isClient) return;
@@ -687,7 +698,7 @@ export default {
 
     return {
       errMsg, rows, ticks, months, selectedClient, clientOptions, onClientChange, externalFilter, weekends, todayLeft, totalPx, pxPerDay, leftW, rowH, rootStyle,
-      toggle, onBarClick, barStyle, startDrag, startDateDrag, fmt, drag, saveError,
+      toggle, onBarClick, barStyle, startDrag, startDateDrag, scrollEl, fmt, drag, saveError,
       showToday: computed(() => !!c('showToday', true)),
       showPriority: computed(() => !!c('showPriority', true)),
       showProgressLabel: computed(() => !!c('showProgressLabel', true)),
