@@ -678,7 +678,7 @@ export default {
 
     return {
       errMsg, rows, ticks, months, selectedClient, clientOptions, onClientChange, externalFilter, weekends, todayLeft, totalPx, pxPerDay, leftW, rowH, rootStyle,
-      toggle, onBarClick, barStyle, startDrag, startDateDrag, drag, saveError,
+      toggle, onBarClick, barStyle, startDrag, startDateDrag, fmt, drag, saveError,
       showToday: computed(() => !!c('showToday', true)),
       showPriority: computed(() => !!c('showPriority', true)),
       showProgressLabel: computed(() => !!c('showProgressLabel', true)),
