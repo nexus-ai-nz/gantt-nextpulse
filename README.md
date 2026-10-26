@@ -14,5 +14,5 @@ Drag a bar to move it, or drag its left/right edge to change the start / end dat
 Events: `task-dates-change` (while saving), `dates-saved`.
 Start date uses the `created_at` column, so moving a bar overwrites it.
 
-## Double click
-Double-click a bar or a task name: sets the component variable `selectedTaskId` (the task id) and `selectedItem` (the row), and fires `task-double-click` (value = the row). Add a workflow on that event to open your popup, and read `selectedTaskId` inside it.
+## Click
+Click a bar or a task name: sets the component variable `selectedTaskId` (the task id) and `selectedItem` (the row), and fires `task-click` (value = the row). Add a workflow on that event to open your popup.
