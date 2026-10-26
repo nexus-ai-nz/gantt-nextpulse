@@ -1,6 +1,6 @@
 {
   "name": "ww-gantt-nextpulse",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "Gantt chart WeWeb component for Nextpulse tasks (no subtasks)",
   "scripts": {

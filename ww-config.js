@@ -58,7 +58,7 @@ export default {
     idField: text('Field: id', 'id'),
     nameField: text('Field: name', 'name'),
     statusField: text('Field: status', 'status'),
-    startField: text('Field: start date', 'start_date'),
+    startField: text('Field: start date', 'created_at'),
     endField: text('Field: end date', 'due_date'),
     createdField: text('Field: created at (fallback start)', 'created_at'),
     progressField: text('Field: progress (0-100)', 'progress'),
