@@ -62,7 +62,7 @@
             :class="{ 'gx-sub': r.isSub, 'gx-clientrow': r.isClient }"
             :style="{ height: rowH + 'px' }"
           >
-            <div class="gx-left gx-cell" :style="{ paddingLeft: 8 + r.depth * 18 + (r.isSub ? 18 : 0) + 'px' }">
+            <div class="gx-left gx-cell" @dblclick="onBarDblClick(r)" :style="{ paddingLeft: 8 + r.depth * 18 + (r.isSub ? 18 : 0) + 'px' }">
               <span
                 v-if="!r.isSub"
                 class="gx-toggle"
@@ -86,6 +86,7 @@
                 :title="r.tooltip"
                 :class="{ 'gx-editable': r.canEdit, 'gx-dragging': drag && drag.key === r.key }"
                 @click="onBarClick(r)"
+                @dblclick="onBarDblClick(r)"
                 @pointerdown="r.canEditDates && startDateDrag($event, r, 'move')"
               >
                 <div class="gx-fill" :style="{ width: r.progress + '%', background: r.color }" />
@@ -155,6 +156,7 @@ export default {
     };
 
     let setSelected = () => {};
+    let setSelectedId = () => {};
     try {
       if (typeof wwLib !== 'undefined') {
         const v = wwLib.wwVariable.useComponentVariable({
@@ -164,6 +166,13 @@ export default {
           defaultValue: null,
         });
         setSelected = v.setValue;
+        const vid = wwLib.wwVariable.useComponentVariable({
+          uid: props.uid,
+          name: 'selectedTaskId',
+          type: 'number',
+          defaultValue: null,
+        });
+        setSelectedId = vid.setValue;
       }
     } catch (e) { /* preview outside WeWeb */ }
 
@@ -643,6 +652,13 @@ export default {
       window.addEventListener('pointercancel', up);
     };
 
+    const onBarDblClick = r => {
+      if (r.isClient) return;
+      setSelected(r.raw);
+      setSelectedId(r.id);
+      emit('trigger-event', { name: 'task-double-click', event: { value: r.raw } });
+    };
+
     let suppressClick = false;
     const onBarClick = r => {
       if (suppressClick) return;
@@ -678,7 +694,7 @@ export default {
 
     return {
       errMsg, rows, ticks, months, selectedClient, clientOptions, onClientChange, externalFilter, weekends, todayLeft, totalPx, pxPerDay, leftW, rowH, rootStyle,
-      toggle, onBarClick, barStyle, startDrag, startDateDrag, fmt, drag, saveError,
+      toggle, onBarClick, barStyle, startDrag, startDateDrag, onBarDblClick, fmt, drag, saveError,
       showToday: computed(() => !!c('showToday', true)),
       showPriority: computed(() => !!c('showPriority', true)),
       showProgressLabel: computed(() => !!c('showProgressLabel', true)),

@@ -17,6 +17,7 @@ export default {
     icon: 'chart',
   },
   triggerEvents: [
+    { name: 'task-double-click', label: label('On task double click (sets selectedTaskId)'), event: { value: {} } },
     { name: 'task-click', label: label('On task bar click'), event: { value: {} } },
     { name: 'task-progress-change', label: label('On task progress change (drag)'), event: { value: { id: 0, progress: 0, previous: 0, row: {} } } },
     { name: 'task-dates-change', label: label('On task dates change (drag)'), event: { value: { id: 0, start: '', end: '', previousStart: '', previousEnd: '', row: {} } } },
